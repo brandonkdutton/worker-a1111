@@ -19,9 +19,8 @@ RUN . /clone.sh BLIP https://github.com/salesforce/BLIP.git 48211a1594f1321b00f1
     . /clone.sh k-diffusion https://github.com/crowsonkb/k-diffusion.git 5b3af030dd83e0297272d861c19477735d0317ec && \
     . /clone.sh clip-interrogator https://github.com/pharmapsychotic/clip-interrogator 2486589f24165c8e3b303f84e9dbbea318df83e8
 
-#RUN wget -O /model.safetensors https://civitai.com/api/download/models/15236
 ADD model.safetensors /
-ADD model2.safetensors /
+ADD model.safetensors /model2.safetensors
 
 # ---------------------------------------------------------------------------- #
 #                        Stage 3: Build the final image                        #
@@ -65,11 +64,18 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     rm /requirements.txt
 
 ARG SHA=89f9faa63388756314e8a1d96cf86bf5e0663045
+RUN cd stable-diffusion-webui && \
+    git fetch && \
+    git reset --hard ${SHA}
+
+COPY /stable_diffusion_web_ui_requirements_versions.txt /stable-diffusion-webui/requirements_versions.txt
+
 RUN --mount=type=cache,target=/root/.cache/pip \
     cd stable-diffusion-webui && \
-    git fetch && \
-    git reset --hard ${SHA} && \
     pip install -r requirements_versions.txt
+
+RUN pip uninstall requests -y && pip install "requests>=2.28.1"
+RUN pip install httpx==0.24.1
 
 ADD src .
 
